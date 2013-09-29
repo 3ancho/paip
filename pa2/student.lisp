@@ -129,15 +129,31 @@
   (print-equations "The solution is:" (solve equations nil)))
 
 (defun solve (equations known)
+  "able to solve two unknown"
+  (or (some #'(lambda (equation)
+                (let* ((x (one-unknown equation))
+		       (x (or x (two-unknown equation))))
+                  (format t "~% x: ~a" x) 
+                  (when x
+                    (let ((answer (solve-arithmetic
+				   (isolate equation x))))
+                      (solve (subst (exp-rhs answer) (exp-lhs answer)
+                                    (remove equation equations))
+                             (cons answer known))))))
+            equations)
+      known))
+
+(defun solve-origin (equations known)
   "Solve a system of equations by constraint propagation."
   ;; Try to solve for one equation, and substitute its value into 
   ;; the others. If that doesn't work, return what is known.
   (or (some #'(lambda (equation)
                 (let ((x (one-unknown equation)))
+                  (format t "~% x: ~a" x) 
                   (when x
                     (let ((answer (solve-arithmetic
 				   (isolate equation x))))
-                      (solve (subst (exp-rhs answer) (exp-lhs answer)
+                      (solve-origin (subst (exp-rhs answer) (exp-lhs answer)
                                     (remove equation equations))
                              (cons answer known))))))
             equations)
@@ -205,6 +221,19 @@
         ((no-unknown (exp-lhs exp)) (one-unknown (exp-rhs exp)))
         ((no-unknown (exp-rhs exp)) (one-unknown (exp-lhs exp)))
         (t nil)))
+
+(defun two-unknown (exp)
+  " Task2, this is after on-unknown so don't need to consider atom "
+  (cond ((unknown-p exp) exp)
+	((atom exp) nil)
+	((and (no-unknown (exp-lhs exp)) (two-unknown (exp-rhs exp)))
+	 (two-unknown (exp-rhs exp)))
+	((and (one-unknown (exp-lhs exp)) (one-unknown (exp-rhs exp))) 
+	 (one-unknown (exp-lhs exp)))
+        ((and (two-unknown (exp-lhs exp)) (no-unknown (exp-rhs exp)))
+	 (two-unknown (exp-lhs exp)))
+	(t nil)))
+        
 
 (defun commutative-p (op)
   "Is operator commutative?"
