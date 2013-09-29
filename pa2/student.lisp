@@ -326,7 +326,6 @@
                   (list (exp-lhs exp) (exp-op exp) (exp-rhs exp))
                   exp))))
 
-
 (defun get-prefix (exp var) 
   " var is a symbol, return (list prefix-of-var constant) "
   (cond ((and (atom exp) (equal exp var)) 
@@ -342,20 +341,42 @@
 			(get-prefix (exp-rhs exp) var)))
 	       (t 
 		fail)))
-	(t
-	 fail)))
-
-;	((equal (exp-op exp) '+)
-;	 (cond ((and (one-unknown (exp-lhs exp)) ; case one
-;		     (one-unknown (exp-rhs exp)))
-;		(mapcar #'+ (get-prefix (exp-lhs exp)) 
-;			(get-prefix (exp-rhs exp))))
-;	       ((and (no-unknown (exp-lhs exp)) ; case two
-;		     (one-unknown (exp-rhs exp)))
-;		(mapcar #'(lambda(x) (* x (eval (exp-lhs exp)))) 
-;			(get-prefix (exp-rhs exp))))
-;	       (t 
-;		fail)))))
+	((equal (exp-op exp) '+)
+	 (cond ((and (one-unknown (exp-lhs exp)) ; case one
+		     (one-unknown (exp-rhs exp)))
+		(mapcar #'+ 
+			(get-prefix (exp-lhs exp) var) 
+			(get-prefix (exp-rhs exp) var)))
+	       ((and (no-unknown (exp-lhs exp)) ; case two
+		     (one-unknown (exp-rhs exp)))
+		(mapcar #'+ 
+			(get-prefix (exp-rhs exp) var)
+			(list 0 (eval (exp-lhs exp)))))
+	       ((and (one-unknown (exp-lhs exp)) ; case two
+		     (no-unknown (exp-rhs exp)))
+		(mapcar #'+ 
+			(get-prefix (exp-lhs exp) var)
+			(list 0 (eval (exp-rhs exp)))))
+	       (t 
+		(list 0 (eval exp)))))
+	((equal (exp-op exp) '-)
+	 (cond ((and (one-unknown (exp-lhs exp)) ; case one
+		     (one-unknown (exp-rhs exp)))
+		(mapcar #'- 
+			(get-prefix (exp-lhs exp) var) 
+			(get-prefix (exp-rhs exp) var)))
+	       ((and (no-unknown (exp-lhs exp)) ; case two
+		     (one-unknown (exp-rhs exp)))
+		(mapcar #'- 
+			(get-prefix (exp-rhs exp) var)
+			(list 0 (eval (exp-lhs exp)))))
+	       ((and (one-unknown (exp-lhs exp)) ; case two
+		     (no-unknown (exp-rhs exp)))
+		(mapcar #'- 
+			(get-prefix (exp-lhs exp) var)
+			(list 0 (eval (exp-rhs exp)))))
+	       (t 
+		(list 0 (eval exp)))))))
 	
 	
 (defun check-valid (exp)

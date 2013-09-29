@@ -2,4 +2,4 @@
 .\#*.lisp
 *~
 *.*.swp
-.fasl
+*.fasl
