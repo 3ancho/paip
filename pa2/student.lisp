@@ -128,46 +128,6 @@
   (print-equations "The equations to be solved are:" equations)
   (print-equations "The solution is:" (solve equations nil)))
 
-;(defun solve (equations known)
-;  "able to solve two unknown"
-;  (or (some #'(lambda (equation)
-;                (let* ((x (one-unknown equation))
-;		        ;if x = nil, x will be left most of two unknowns, or nil
-;		       (x (or x (two-unknown equation)))
-;		       (two-p (x and (not (one-unknown equation)))))
-;                  (when x
-;		    (if (and two-p (equal two-p (two-unknown-right equation)))
-;			(let ((left-is-var (move-to-left equation x))) ; move var to left side
-;			  )
-;			(let* ((left-is-var (isolate equation x)) ; after iso, lhs is a single var
-;			       (answer 
-;				(if (one-unknown left-is-var)
-;				    (solve-arithmetic (isolate equation x))
-;				    left-is-var)))
-;			  (solve (subst (exp-rhs answer) (exp-lhs answer)
-;					(remove equation equations))
-;				 (cons answer known)))))))
-;            equations)
-;      known))
-
-(defun solve (equations known)
-  "able to solve two unknown"
-  (or (some #'(lambda (equation)
-                (let* ((x (one-unknown equation)) ; if x = nil, x will be left most of two unknowns, or nil
-		       (x (or x (two-unknown equation)))) 
-                  (when x
-                    (let* ((left-is-var (isolate equation x)) ; after iso, lhs is a single var
-			   (answer 
-			    (if (one-unknown left-is-var)
-				(solve-arithmetic (isolate equation x))
-				left-is-var))) ;bind somethting to answer
-		      (when answer ; proceed only when there is answer
-			(solve (subst (exp-rhs answer) (exp-lhs answer)
-				      (remove equation equations))
-			       (cons answer known)))))))
-            equations)
-      known))
-
 (defun solve-origin (equations known)
   "Solve a system of equations by constraint propagation."
   ;; Try to solve for one equation, and substitute its value into 
@@ -182,66 +142,6 @@
                              (cons answer known))))))
             equations)
       known))
-
-(defun two-same-unknown-p (e)
-  " not nil and left = right "
-  (let ((left (two-unknown e))
-	(right (two-unknown-right e)))
-    (and left (equal left right))))
-
-;(defun move-unknown-to-left (e)
-;  " two sides of e have var, move them to left "
-;  (cond ((commutative-p (exp-op (exp-rhs e)))
-;	 
-;	 (mkexp (mkexp (exp-lhs e)
-;		       (inverse-op (exp-op (exp-rhs e)))
-;		       (one-unknown (exp-rhs e))) ; new left
-;		'= ; op
-;		; new right
-;		
-;
-;
-;        ((commutative-p (exp-op (exp-lhs e)))
-;         ;; Case IV: A*f(X) = B -> f(X) = B/A
-;         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
-;                         (mkexp (exp-rhs e)
-;                                (inverse-op (exp-op (exp-lhs e)))
-;                                (exp-lhs (exp-lhs e)))) x))
-;	(t 
-;         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
-;                         (mkexp (exp-lhs (exp-lhs e))
-;                                (exp-op (exp-lhs e))
-;                                (exp-rhs e))) x))))
-
-(defun isolate (e x)
-  "Isolate the lone x in e on the left hand side of e."
-  ;; This assumes there is exactly one x in e,
-  ;; and that e is an equation.
-  (cond ((two-same-unknown-p e)
-	 (isolate (move-unknown-to-left e x) x))
-	((eq (exp-lhs e) x)
-         ;; Case I: X = A -> X = n
-         e)
-        ((in-exp x (exp-rhs e))
-         ;; Case II: A = f(X) -> f(X) = A
-         (isolate (mkexp (exp-rhs e) '= (exp-lhs e)) x))
-        ((in-exp x (exp-lhs (exp-lhs e)))
-         ;; Case III: f(X)*A = B -> f(X) = B/A
-         (isolate (mkexp (exp-lhs (exp-lhs e)) '=
-                         (mkexp (exp-rhs e)
-                                (inverse-op (exp-op (exp-lhs e)))
-                                (exp-rhs (exp-lhs e)))) x))
-        ((commutative-p (exp-op (exp-lhs e)))
-         ;; Case IV: A*f(X) = B -> f(X) = B/A
-         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
-                         (mkexp (exp-rhs e)
-                                (inverse-op (exp-op (exp-lhs e)))
-                                (exp-lhs (exp-lhs e)))) x))
-        (t ;; Case V: A/f(X) = B -> f(X) = A/B
-         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
-                         (mkexp (exp-lhs (exp-lhs e))
-                                (exp-op (exp-lhs e))
-                                (exp-rhs e))) x))))
 
 (defun print-equations (header equations)
   "Print a list of equations."
@@ -278,6 +178,34 @@
         ((no-unknown (exp-rhs exp)) (one-unknown (exp-lhs exp)))
         (t nil)))
 
+
+(defun commutative-p (op)
+  "Is operator commutative?"
+  (member op '(+ * =)))
+
+(defun solve-arithmetic (equation)
+  "Do the arithmetic for the right hand side."
+  ;; This assumes that the right hand side is in the right form.
+  (mkexp (exp-lhs equation) '= (eval (exp-rhs equation))))
+
+(defun binary-exp-p (x)
+  (and (exp-p x) (= (length (exp-args x)) 2)))
+
+(defun prefix->infix (exp)
+  "Translate prefix to infix expressions."
+  (if (atom exp) exp
+      (mapcar #'prefix->infix
+              (if (binary-exp-p exp)
+                  (list (exp-lhs exp) (exp-op exp) (exp-rhs exp))
+                  exp))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;
+; Task 2 Additional functions 
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun two-unknown (exp)
   " Task2, this is after on-unknown so don't need to consider atom "
   (cond ((one-unknown exp)
@@ -306,25 +234,60 @@
 	 (two-unknown-right (exp-lhs exp)))
 	(t nil)))
 
-(defun commutative-p (op)
-  "Is operator commutative?"
-  (member op '(+ * =)))
 
-(defun solve-arithmetic (equation)
-  "Do the arithmetic for the right hand side."
-  ;; This assumes that the right hand side is in the right form.
-  (mkexp (exp-lhs equation) '= (eval (exp-rhs equation))))
+(defun two-same-unknown-p (e)
+  " not nil and left = right "
+  (let ((left (two-unknown e))
+	(right (two-unknown-right e)))
+    (and left (equal left right))))
 
-(defun binary-exp-p (x)
-  (and (exp-p x) (= (length (exp-args x)) 2)))
+(defun isolate (e x)
+  " Modified version of isolate "
+  (cond ((two-same-unknown-p e)
+	 ;; Case 0: when there are two var with same symbol
+	 (isolate (move-unknown-to-left e x) x))
+	((eq (exp-lhs e) x)
+         ;; Case I: X = A -> X = n
+         e)
+        ((in-exp x (exp-rhs e))
+         ;; Case II: A = f(X) -> f(X) = A
+         (isolate (mkexp (exp-rhs e) '= (exp-lhs e)) x))
+        ((in-exp x (exp-lhs (exp-lhs e)))
+         ;; Case III: f(X)*A = B -> f(X) = B/A
+         (isolate (mkexp (exp-lhs (exp-lhs e)) '=
+                         (mkexp (exp-rhs e)
+                                (inverse-op (exp-op (exp-lhs e)))
+                                (exp-rhs (exp-lhs e)))) x))
+        ((commutative-p (exp-op (exp-lhs e)))
+         ;; Case IV: A*f(X) = B -> f(X) = B/A
+         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
+                         (mkexp (exp-rhs e)
+                                (inverse-op (exp-op (exp-lhs e)))
+                                (exp-lhs (exp-lhs e)))) x))
+        (t ;; Case V: A/f(X) = B -> f(X) = A/B
+         (isolate (mkexp (exp-rhs (exp-lhs e)) '=
+                         (mkexp (exp-lhs (exp-lhs e))
+                                (exp-op (exp-lhs e))
+                                (exp-rhs e))) x))))
 
-(defun prefix->infix (exp)
-  "Translate prefix to infix expressions."
-  (if (atom exp) exp
-      (mapcar #'prefix->infix
-              (if (binary-exp-p exp)
-                  (list (exp-lhs exp) (exp-op exp) (exp-rhs exp))
-                  exp))))
+(defun solve (equations known)
+  "modified on solve-origin, able to solve two unknown"
+  (or (some #'(lambda (equation)
+                (let* ((x (one-unknown equation)) ; if x = nil, x will be left most of two unknowns, or nil
+		       (x (or x (two-unknown equation)))) 
+                  (when x
+                    (let* ((left-is-var (isolate equation x)) ; after iso, lhs is a single var
+			   (answer 
+			    (if (one-unknown left-is-var)
+				(solve-arithmetic (isolate equation x))
+				left-is-var))) ;bind somethting to answer
+		      (when answer ; proceed only when there is answer
+			(solve (subst (exp-rhs answer) (exp-lhs answer)
+				      (remove equation equations))
+			       (cons answer known)))))))
+            equations)
+      known))
+
 
 (defun get-prefix (exp var) 
   " var is a symbol, return (list prefix-of-var constant) "
@@ -387,32 +350,19 @@
 				    (exp-rhs exp)) var) 
 		'= 
 		0))))
-
-;(defun move-unknown-to-left (exp var) 
-;  " (first result) is coefficient of variable, (second result) is constant. "
-;  (cond ((one-unknown (exp-rhs exp))
-;	 (cond ((in-exp var (exp-rhs (exp-rhs exp)))
-;		(move-unknown-to-left (mkexp 
-;				       (exp-lhs exp)
-;				       '=
-;				       (mkexp (exp-rhs (exp-rhs exp)) (exp-op (exp-rhs exp)) (exp-lhs (exp-rhs exp)))
-;				       ) var)) ;(= (- 100 (* Y 40)) (* 10 Y)) rhs->rhs->y ; (* y 10)
-;	       ((commutative-p (exp-op (exp-rhs exp))); (= (- 100 (* Y 40)) (* Y 10))
-;		(combine-var (mkexp 
-;			      (mkexp (exp-lhs exp)
-;				     (inverse-op (exp-op (exp-rhs exp)))
-;				     (exp-lhs (exp-rhs exp)))  ; Y from (* Y 10)
-;			      '=
-;			      (exp-rhs (exp-rhs exp)) ; 10 from (* Y 10)
-;			      ) var))))))
   
 (defun combine-var (exp var)
   " exp can not contain = "
-  (let ((result (get-prefix exp var)))
-    (mkexp 
-     `(* ,(first result) ,var)
-     '+
-     (second result))))
+  (let* ((result (get-prefix exp var))
+	 (co-var (first result))
+	 (co-const (second result)))
+    (if co-const
+	(mkexp 
+	 `(* ,(first result) ,var)
+	 '+
+	 (second result))
+	; else
+	`(* ,(first result) ,var))))
 
 ; example:    
 ; > (move-unknown-to-left '(+ (* 4 x) (+ 100 x)) 'x)	
