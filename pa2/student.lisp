@@ -123,11 +123,6 @@
   "Create a variable name based on the given list of words"
   (first words))
 
-(defun solve-equations (equations)
-  "Print the equations and their solution"
-  (print-equations "The equations to be solved are:" equations)
-  (print-equations "The solution is:" (solve equations nil)))
-
 (defun solve-origin (equations known)
   "Solve a system of equations by constraint propagation."
   ;; Try to solve for one equation, and substitute its value into 
@@ -206,6 +201,16 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun solve-equations (equations)
+  " solve multiple times"
+  (print-equations "The equations to be solved are:" equations)
+  (print-equations "The solution is:" 
+		   (let ((solved (solve equations nil)))
+		     (if (every #'one-unknown solved)
+			 solved
+			 (solve solved nil)))))
+
+
 (defun two-unknown (exp)
   " Task2, this is after on-unknown so don't need to consider atom "
   (cond ((one-unknown exp)
@@ -270,12 +275,18 @@
                                 (exp-op (exp-lhs e))
                                 (exp-rhs e))) x))))
 
+
+;;;;;;;;;
+; the limitation for this program is can't solve two more vars.
+;
+; Also can't solve 2nd and above order equations 
+
 (defun solve (equations known)
   "modified on solve-origin, able to solve two unknown"
   (or (some #'(lambda (equation)
                 (let* ((x (one-unknown equation)) ; if x = nil, x will be left most of two unknowns, or nil
 		       (x (or x (two-unknown equation)))) 
-                  (when x
+                  (when x ; if there are three vars, return nil
                     (let* ((left-is-var (isolate equation x)) ; after iso, lhs is a single var
 			   (answer 
 			    (if (one-unknown left-is-var)
@@ -288,8 +299,10 @@
             equations)
       known))
 
-
-(defun get-prefix (exp var) 
+; limitation: (/ 1 x) will fail
+; (/ x 2) works
+(defun get-coefficient (exp var) 
+  " exp contains no = "
   " var is a symbol, return (list prefix-of-var constant) "
   (cond ((and (atom exp) (equal exp var)) 
 	 (list 1 0))
@@ -297,28 +310,28 @@
 	 (cond ((and (one-unknown (exp-lhs exp)) 
 		     (no-unknown (exp-rhs exp)))
 		(mapcar #'(lambda(x) (* x (eval (exp-rhs exp)))) 
-			(get-prefix (exp-lhs exp) var)))
+			(get-coefficient (exp-lhs exp) var)))
 	       ((and (no-unknown (exp-lhs exp))
 		     (one-unknown (exp-rhs exp)))
 		(mapcar #'(lambda(x) (* x (eval (exp-lhs exp)))) 
-			(get-prefix (exp-rhs exp) var)))
+			(get-coefficient (exp-rhs exp) var)))
 	       (t 
 		fail)))
 	((equal (exp-op exp) '+)
 	 (cond ((and (one-unknown (exp-lhs exp)) ; case one
 		     (one-unknown (exp-rhs exp)))
 		(mapcar #'+ 
-			(get-prefix (exp-lhs exp) var) 
-			(get-prefix (exp-rhs exp) var)))
+			(get-coefficient (exp-lhs exp) var) 
+			(get-coefficient (exp-rhs exp) var)))
 	       ((and (no-unknown (exp-lhs exp)) ; case two
 		     (one-unknown (exp-rhs exp)))
 		(mapcar #'+ 
-			(get-prefix (exp-rhs exp) var)
+			(get-coefficient (exp-rhs exp) var)
 			(list 0 (eval (exp-lhs exp)))))
 	       ((and (one-unknown (exp-lhs exp)) ; case two
 		     (no-unknown (exp-rhs exp)))
 		(mapcar #'+ 
-			(get-prefix (exp-lhs exp) var)
+			(get-coefficient (exp-lhs exp) var)
 			(list 0 (eval (exp-rhs exp)))))
 	       (t 
 		(list 0 (eval exp)))))
@@ -326,22 +339,39 @@
 	 (cond ((and (one-unknown (exp-lhs exp)) ; case one
 		     (one-unknown (exp-rhs exp)))
 		(mapcar #'- 
-			(get-prefix (exp-lhs exp) var) 
-			(get-prefix (exp-rhs exp) var)))
+			(get-coefficient (exp-lhs exp) var) 
+			(get-coefficient (exp-rhs exp) var)))
 	       ((and (no-unknown (exp-lhs exp)) ; case two
 		     (one-unknown (exp-rhs exp)))
 		(mapcar #'- 
 			(list 0 (eval (exp-lhs exp))) 
-			(get-prefix (exp-rhs exp) var)))
+			(get-coefficient (exp-rhs exp) var)))
 	       ((and (one-unknown (exp-lhs exp)) ; case two
 		     (no-unknown (exp-rhs exp)))
 		(mapcar #'- 
-			(get-prefix (exp-lhs exp) var)
+			(get-coefficient (exp-lhs exp) var)
 			(list 0 (eval (exp-rhs exp)))))
 	       (t 
-		(list 0 (eval exp)))))))
+		(list 0 (eval exp)))))
+	((equal (exp-op exp) '/) ; only one case we can handle e.g. (/ x 1)
+	 (cond ((and (one-unknown (exp-lhs exp)) 
+		     (no-unknown (exp-rhs exp)))
+		(mapcar #'/ 
+			(get-coefficient (exp-lhs exp) var) 
+			(list (eval (exp-rhs exp)) (eval (exp-rhs exp)))))
+	       (t
+		fail)))
+	(t ; if the operator is not supported 
+	 fail)))
+
+; example
+; > (get-coefficient '(+ x (* 2 (+ 1 x))) 'x)
+; (3 2)
+;
+; > (get-coefficient '(/ (+ 2 (* 3 x)) 3) 'x)
+; (1 2/3)
 	
-	
+
 (defun move-unknown-to-left (exp var) 
   " (first result) is coefficient of variable, (second result) is constant. "
   (cond ((one-unknown (exp-rhs exp))
@@ -349,21 +379,23 @@
 				    '- 
 				    (exp-rhs exp)) var) 
 		'= 
-		0))))
-  
-(defun combine-var (exp var)
-  " exp can not contain = "
-  (let* ((result (get-prefix exp var))
-	 (co-var (first result))
-	 (co-const (second result)))
-    (if co-const
-	(mkexp 
-	 `(* ,(first result) ,var)
-	 '+
-	 (second result))
-	; else
-	`(* ,(first result) ,var))))
-
+		0))
+	(t
+	 (mkexp (combine-var (exp-lhs exp) var) (exp-op exp) (exp-rhs exp)))))
 ; example:    
 ; > (move-unknown-to-left '(+ (* 4 x) (+ 100 x)) 'x)	
 ; (+ (* 5 X) 100)
+
+  
+(defun combine-var (exp var)
+  " exp can not contain = "
+  (let* ((result (get-coefficient exp var))
+	 (co-var (first result))
+	 (co-const (second result)))
+    (if (zerop co-const)
+	`(* ,co-var ,var)
+	(mkexp `(* ,co-var ,var) '+ co-const)))); else
+
+; example
+; > (combine-var '(+ x x) 'x)
+; (* 2 X)

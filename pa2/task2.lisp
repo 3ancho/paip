@@ -6,6 +6,21 @@
 (setf equations '((= 100 (+ x (* y 40)))
 		  (= x (* 10 y))))
 
+; > (solve-equations equations)
+; The equations to be solved are:
+;    100 = (X + (Y * 40))
+;    X = (10 * Y)
+; 
+; The solution is:
+;    X = 20
+;    Y = 2
+; NIL
+
+(setf three '((= 100 (+ x (+ y z)))
+		  (= x (- y 10))
+		  (= x z)))
+
+
 (setf two-arg '((= (* 4 x) (- 100 x))))
 (solve equations nil)
 
