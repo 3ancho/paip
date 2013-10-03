@@ -4,6 +4,13 @@
 
 ;;;; student.lisp: Chapter 7's STUDENT program to solve algebra word problems.
 
+
+;;; HWK2 Task2
+;;;
+;;; Ruoran Wang & Changkyu Song modified version
+;;;
+;;; Modified code locates after line number 200~
+
 (load "patmatch.lisp")
 
 (defstruct (rule (:type list)) pattern response)
@@ -248,10 +255,9 @@
 
 (defun isolate (e x)
   " Modified version of isolate "
-  (cond ((two-same-unknown-p e)
-	 ;; Case 0: when there are two var with same symbol
-	 (isolate (move-unknown-to-left e x) x))
-	((eq (exp-lhs e) x)
+  (cond ((two-same-unknown-p e) ;; Case 0: when there are two var with same symbol
+	     (isolate (move-unknown-to-left e x) x))
+	    ((eq (exp-lhs e) x)
          ;; Case I: X = A -> X = n
          e)
         ((in-exp x (exp-rhs e))
@@ -302,7 +308,7 @@
 ; limitation: (/ 1 x) will fail
 ; (/ x 2) works
 (defun get-coefficient (exp var) 
-  " exp contains no = "
+  " exp should not contain '= as its operator "
   " var is a symbol, return (list prefix-of-var constant) "
   (cond ((and (atom exp) (equal exp var)) 
 	 (list 1 0))
@@ -372,8 +378,9 @@
 ; (1 2/3)
 	
 
+; This method moves and combines the coefficient of the var
 (defun move-unknown-to-left (exp var) 
-  " (first result) is coefficient of variable, (second result) is constant. "
+  " first of return-value-of-this-function is coefficient of variable, second of return-value-of-this-function is constant. "
   (cond ((one-unknown (exp-rhs exp))
 	 (mkexp (combine-var (mkexp (exp-lhs exp) 
 				    '- 

@@ -1,5 +1,14 @@
+;;; HWK2 Task2 
+;;;
+;;; Ruoran Wang & Changkyu Song 
 
+
+;;; This student is modified to handle two variables. 
+;;; Check the bottom of this student.lisp for modified functions
 (load "student.lisp")
+
+
+;;; This file only contains some examples:
 
 (setf equations '((= 100 (+ x (* y 40)))
 		  (= x (* 10 y))))
@@ -13,13 +22,6 @@
 ;    Y = 2
 ; NIL
 
-(setf three '((= 100 (+ x (+ y z)))
-		  (= x (- y 10))
-		  (= x z)))
-
-(setf three2 '((= x z)
-	       (= 100 (+ x (+ y z)))
-	       (= x (- y 10))))
 
 (setf example2 '(if tom's age plus lily's age is 4 |,| and tom's age minus lily's age is 0 |,| then what is tom's age ?))
 ;CL-USER> (student example2)
@@ -44,5 +46,3 @@
 ;The solution is:
 ;   X = 20
 ;NIL
-
-
