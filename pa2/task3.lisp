@@ -1,3 +1,9 @@
+;;; HWK 2 Task 3
+;;;
+;;; Ruoran Wang & Changkyu Song
+;;;
+;;; This uses student_org.lisp which is the original version of student.lisp
+
 (load "student_org.lisp")
 
 (setf example3-1 '(what is the sum of 2 times 3 and 4 ?))
@@ -5,6 +11,9 @@
 (setf example3-2 '(what is the product of 2 plus 3 and 4 ?))
 
 (setf example3-3 '(the square footage is twice the perimeter |.| the perimeter is 20 |.| what is the square footage ?))
+
+
+;;; The code bellow are overrding the original functions
 
 (defvar *cont*    0)
 (defvar *trial*   0)
@@ -72,4 +81,3 @@
        )
   )
 )
-

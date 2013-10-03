@@ -2,13 +2,20 @@
 ;;;
 ;;; Ruoran Wang & Changkyu Song 
 
-
 ;;; This student is modified to handle two variables. 
 ;;; Check the bottom of this student.lisp for modified functions
 (load "student.lisp")
 
-
 ;;; This file only contains some examples:
+
+;;; The limitation is the program use a function called two-unknown to check if there are two unknown in an expression
+;;; This case is ok
+;;;    Tom + Tom = 2
+;;;
+;;; This case is not supported, because it have three varaibles, although they are the same one.
+;;;    Tom + Tom + Tom = 3
+;;;
+;;; The program can't solve   Tom * Tom = 4, neither higher orders
 
 (setf equations '((= 100 (+ x (* y 40)))
 		  (= x (* 10 y))))
