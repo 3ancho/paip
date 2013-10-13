@@ -205,7 +205,7 @@
 
 (defun minimax-searcher (ply eval-fn)  ; strategy will be feed into get-move,
   "A strategy that searches PLY levels and then uses EVAL-FN."
-  #'(lambda (player board) ;; called by get-move , this player is the cur player
+  #'(lambda (player board)
       (multiple-value-bind (value move)
           (minimax player board ply eval-fn) ; the call for minimax return tuple (v, m)
         (declare (ignore value))

@@ -1,5 +1,5 @@
-(load "/Users/ruoran/Dropbox/EECS543/piap/pa3/task3/auxfns.lisp")
-(load "/Users/ruoran/Dropbox/EECS543/piap/pa3/task3/othello.lisp")
+(load "/Users/ruoran/Dropbox/EECS543/piap/pa3/task4/auxfns.lisp")
+(load "/Users/ruoran/Dropbox/EECS543/piap/pa3/task4/othello.lisp")
 
 
 (defparameter *smart-weights*
@@ -52,6 +52,8 @@
 (defun get-weights (player) 
   (rest (assoc player *player-weights*)))
 
+
+; this will assume opponent have same strayegy
 (defun weighted-squares (player board)
   "Sum of the weights of player's squares minus opponent's."
   (let ((opp (opponent player)))
@@ -60,5 +62,6 @@
        sum (aref (get-weights player) i)
        ;do (format t "~%~a" (equalp (get-weights black) *equal-weights*))
        when (eql (bref board i) opp)
-       sum (- (aref (get-weights opp) i))
-       ;do (format t "~%~a" (equalp (get-weights white) *dumb-weights*)))))
+       sum (- (aref (get-weights player) i))
+       ;do (format t "~%~a" (equalp (get-weights white) *dumb-weights*))
+	 )))
