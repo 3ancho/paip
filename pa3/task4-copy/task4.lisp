@@ -41,9 +41,8 @@
 
 (setf *player-weights*
       (acons black
-	     (acons black *equal-weights* (acons white *equal-weights* NIL))
-	     (acons white (acons white *dumb-weights* (acons black *dumb-weights* NIL)) NIL)))
-
+	     (acons black *smart-weights* (acons white *equal-weights* NIL))
+	     (acons white (acons white *equal-weights* (acons black *smart-weights* NIL)) NIL)))
 
 ;(setf *player-weights*
 ;      (acons black *equal-weights* (acons white *dumb-weights* NIL)))
@@ -99,45 +98,18 @@
           when (eql (bref board i) opp)
           sum (- (aref *dumb-weights* i)))))
 
-; When calculating opponent, opp use smae weights 
-(defun weighted-squares-task3 (player board cur-player)
-  "Sum of the weights of player's squares minus opponent's."
-  (let ((opp (opponent player)))
-    ;(format t "~%~a's turn, he thinks in ~a using ~a" cur-player player (get-weight-name (get-weights player cur-player)))
-    (if (equal player cur-player)
-	(loop for i in all-squares
-	   when (eql (bref board i) player) 
-	   sum (aref (get-weights player cur-player) i)
-	   ;do (format t "~%~a is playing, he thinks ~a use ~a" cur-player player (get-weight-name (get-weights player cur-player)))
-	   when (eql (bref board i) opp)
-	   sum (- (aref (get-weights player cur-player) i))
-	   ;do (format t "~%~a is playing, he thinks ~a use ~a" cur-player opp (get-weight-name (get-weights player cur-player)))
-	     )
-	(loop for i in all-squares  
-	   when (eql (bref board i) player) 
-	   sum (aref (get-weights (opponent cur-player) cur-player) i)
-	   ;do (format t "~%~a is playing, he think in ~a use ~a, opp think of him self" cur-player player (get-weight-name (get-weights (opponent cur-player) cur-player)))
-	   when (eql (bref board i) opp)
-	   sum (- (aref (get-weights (opponent cur-player) cur-player) i))
-	   ;do (format t "~%~a is playing, he think in ~a use ~a, opp think of me" cur-player opp (get-weight-name (get-weights (opponent cur-player) cur-player)))
-	     ))))
 
-; When calculating opponent, will fetch opponent's strategy 
-(defun weighted-squares-task4 (player board cur-player)
+;; When calculating opponent, opp use smae weights 
+(defun multimodel-weighted-squares (player board cur-player)
   "Sum of the weights of player's squares minus opponent's."
   (let ((opp (opponent player)))
-    (if (equal player cur-player)
-	(loop for i in all-squares ; last step is by playing guy
-	   when (eql (bref board i) player) 
-	   sum (aref (get-weights player cur-player) i)
-	   when (eql (bref board i) opp)
-	   sum (- (aref (get-weights player cur-player) i)))
-	(loop for i in all-squares   ; last step is by opp
-	   when (eql (bref board i) player) 
-	   sum (aref (get-weights (opponent cur-player) cur-player) i)
-	   when (eql (bref board i) opp)
-	   sum (- (aref (get-weights (opponent cur-player) cur-player) i))
-	     ))))
+    (loop for i in all-squares
+       when (eql (bref board i) player) 
+       sum (aref (get-weights player cur-player) i)
+       when (eql (bref board i) opp)
+       sum (- (aref (get-weights opp cur-player) i))
+	 )))
+
 
 
 ; cur-player is the current playing/thinking player
@@ -207,7 +179,7 @@
                     (setf best-move move))))
               (values best-val best-move)))))) ;
 
-(defun minimax-searcher (ply eval-fn)  ; strategy will be feed into get-move,
+(defun multimodel-minimax-searcher (ply eval-fn)  ; strategy will be feed into get-move,
   "A strategy that searches PLY levels and then uses EVAL-FN."
   #'(lambda (player board) ;; called by get-move , this player is the cur player
       (multiple-value-bind (value move)
